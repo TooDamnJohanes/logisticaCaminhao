@@ -1,15 +1,14 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
-from datetime import datetime, timedelta
+from datetime import datetime as date_time
 
 from datetime import timedelta
 from tkinter import ttk
 
-import openpyxl
 from openpyxl.utils import datetime
 
 from Constants import CAMINHAO_PATH_FOLDER_NAME
 from Despacho import Despacho
+from GerenciaArquivosExcel import GerenciaArquivosExcel
 
 
 class FrenteColheita:
@@ -26,25 +25,23 @@ class FrenteColheita:
     PROXIMO_ENVIO_LABEL = "Próximo envio:"
     DESPACHAR = "Despachar"
 
-    def __init__(self, frente_frame, frota_disponivel):
+    def __init__(self, frente_frame):
         self.qc_entry = None
         self.tch_entry = None
         self.vmc_entry = None
         self.hpc_entry = None
         self.raio_entry = None
         self.frente_frame = frente_frame
+        self.gerenciador_planilha_despacho = GerenciaArquivosExcel(
+            path_arquivo_ser_criado=CAMINHAO_PATH_FOLDER_NAME,
+            nome_planilha=self.DESPACHO_PLANILHA_FILE_NAME
+        )
         self.frota_disponivel = self.buscar_frotas_caminhoes()
         self.caminhao_selecionado = tk.StringVar()  # Adicionar essa linha
         self.create_widgets()
-        self.db_path = self.DESPACHO_PLANILHA_FILE_NAME  # Caminho do arquivo Excel
 
     def buscar_frotas_caminhoes(self):
-        # Cria ou abre o arquivo Excel
-        workbook = self.cria_arquivo_excel()
-
-        # Seleciona a planilha
-        sheet = workbook.active
-
+        sheet = self.gerenciador_planilha_despacho.cria_arquivo_excel().active
         frotas = []
         # Percorre as linhas da planilha
         for row in sheet.iter_rows(min_row=0, values_only=True):
@@ -55,13 +52,6 @@ class FrenteColheita:
                 frotas.append(frota)
 
         return frotas
-
-    @staticmethod
-    def cria_arquivo_excel():
-        try:
-            return openpyxl.load_workbook(CAMINHAO_PATH_FOLDER_NAME)
-        except FileNotFoundError:
-            return []
 
     def cria_hpc_entry_component(self):
         self.hpc_entry = ttk.Entry(self.frente_frame)
@@ -139,7 +129,6 @@ class FrenteColheita:
         despacho_button = ttk.Button(self.frente_frame, text=self.DESPACHAR, command=self.abrir_janela_despacho)
         despacho_button.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
 
-
     def create_widgets(self):
         # Campos de entrada
         self.cria_entry_components()
@@ -154,7 +143,40 @@ class FrenteColheita:
         self.cria_botao_despacho()
 
     def calcular_nc(self):
+        nc = self.calcula_nc_value()
 
+        # Cálculo da hora do próximo envio
+        proximo_cam_str = (self.calcula_horario_proximo_envio(nc=nc)
+                           .strftime("%Y-%m-%d %H:%M:%S"))
+
+        # Atualiza os valores na interface
+        self.nc_label.configure(text=f"NC: {nc:.2f}")
+        self.proximo_cam_label.configure(text=f"Próximo envio: {proximo_cam_str}")
+
+        # Cálculo do ciclo
+        ciclo = self.calcula_horario_ciclo()
+        hora_envio = date_time.now()
+        # Cálculo da hora de retorno
+        hora_retorno = hora_envio + timedelta(hours=ciclo)
+        hora_retorno_str = hora_retorno.strftime("%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def calcula_hc_h_value(vmc):
+        return (vmc * 1.5) / 10
+
+    @staticmethod
+    def calcula_tcch_value(hc_h, tch):
+        return hc_h * tch
+
+    @staticmethod
+    def calcula_tf_value(tcch, qc, hpc):
+        return tcch * qc * (hpc / 100)
+
+    @staticmethod
+    def calcula_tcf_value(cc, tf):
+        return (cc * 60) / tf
+
+    def calcula_nc_value(self):
         # Obtendo os valores dos campos de entrada
         hpc = float(self.hpc_entry.get())
         vmc = float(self.vmc_entry.get())
@@ -162,32 +184,27 @@ class FrenteColheita:
         qc = int(self.qc_entry.get())
 
         # Cálculo dos valores necessários
-        hc_h = (vmc * 1.5) / 10
-        tcch = hc_h * tch
-        tf = tcch * qc * (hpc / 100)
+        hc_h = self.calcula_hc_h_value(vmc=vmc)
+        tcch = self.calcula_tcch_value(hc_h=hc_h, tch=tch)
+        tf = self.calcula_tf_value(
+            tcch=tcch,
+            qc=qc,
+            hpc=hpc
+        )
         cc = 75  # Capacidade do caminhão em toneladas (exemplo)
-        tcf = (cc * 60) / tf
-        nc = 60 / tcf
+        return 60 / self.calcula_tcf_value(cc=cc, tf=tf)
 
-        # Cálculo da hora do próximo envio
-        now = datetime.now()
+    @staticmethod
+    def calcula_horario_proximo_envio(nc):
+        now = date_time.now()
         horas_nc = int(1 / nc)
         minutos_extra = int((1 / nc - horas_nc) * 60)
-        proximo_cam = now + timedelta(hours=horas_nc, minutes=minutos_extra)
-        proximo_cam_str = proximo_cam.strftime("%Y-%m-%d %H:%M:%S")
+        return now + timedelta(hours=horas_nc, minutes=minutos_extra)
 
-        # Atualiza os valores na interface
-        self.nc_label.configure(text=f"NC: {nc:.2f}")
-        self.proximo_cam_label.configure(text=f"Próximo envio: {proximo_cam_str}")
-
-        # Cálculo do ciclo
+    def calcula_horario_ciclo(self):
         vcc = float(self.vcc_entry.get())
         raio = float(self.raio_entry.get())
-        ciclo = float(raio / vcc)
-        hora_envio = datetime.now()
-        # Cálculo da hora de retorno
-        hora_retorno = hora_envio + timedelta(hours=ciclo)
-        hora_retorno_str = hora_retorno.strftime("%Y-%m-%d %H:%M:%S")
+        return float(raio / vcc)
 
     def abrir_janela_despacho(self):
         frente_nome = self.frente_frame.master.tab(self.frente_frame)['text']
@@ -197,12 +214,11 @@ class FrenteColheita:
         self.qc = int(self.qc_entry.get())
         self.nc = float(self.nc_label["text"].split(": ")[1])
         self.proximo_cam_str = self.proximo_cam_label["text"].split(": ")[1]
-        caminhao = self.caminhao_selecionado.get()
         self.raio = float(self.raio_entry.get())
         self.vcc = float(self.vcc_entry.get())
-        # hora_retorno_c = self.hora_retorno_str
 
-        janela_despacho = Despacho(frente_nome, self.frota_disponivel, self.despacho_caminhao, caminhao)
+        janela_despacho = Despacho(frente_nome, self.frota_disponivel, self.despacho_caminhao,
+                                   self.caminhao_selecionado.get())
 
         janela_despacho.grab_set()
 
@@ -219,16 +235,9 @@ class FrenteColheita:
         # self.buscar_hora_envio(hr_retorno)
         self.inserir_dados_frente(hpc, vmc, tch, qc, nc, proximo_cam_str, caminhao, raio)
 
-    def inserir_dados_frente(self, hpc, vmc, tch, qc, nc, proximo_cam, caminhao, raio, hora_retorno_c):
-        # Cria ou abre o arquivo Excel
-        try:
-            workbook = openpyxl.load_workbook(self.db_path)
-        except FileNotFoundError:
-            workbook = openpyxl.Workbook()
-            workbook.save(self.db_path)
-
+    def inserir_dados_frente(self, hpc, vmc, tch, qc, nc, proximo_cam, caminhao, raio):
         # Seleciona a planilha
-        sheet = workbook.active
+        sheet = self.gerenciador_planilha_despacho.seleciona_planilha_excel()
 
         # Verifica se a planilha está vazia
         if sheet.max_row == 1:
@@ -265,4 +274,4 @@ class FrenteColheita:
         # sheet.cell(row=last_row + 1, column=11, value=hora_retorno_c)
 
         # Salva as alterações no arquivo Excel
-        workbook.save(self.db_path)
+        self.gerenciador_planilha_despacho.salva_planilha()

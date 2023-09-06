@@ -32,7 +32,7 @@ def cria_notebook_abas_frente_corte():
 def cria_aba_frente_corte(nome_frente, abas_frentes):
     frente_frame = ttk.Frame(abas_frentes)
     abas_frentes.add(frente_frame, text=nome_frente)
-    FrenteColheita(frente_frame, frota_disponivel)
+    FrenteColheita(frente_frame)
 
 
 construcao_janela_despacho()

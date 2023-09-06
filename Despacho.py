@@ -12,6 +12,16 @@ class Despacho(tk.Toplevel):
 
     def __init__(self, frente_nome, frota_disponivel, despacho_callback, caminhao_selecionado):
         super().__init__()
+        self.vmc = None
+        self.tch = None
+        self.qc = None
+        self.nc = None
+        self.proximo_cam_str = None
+        self.raio = None
+        self.despacho_callback = None
+        self.frente_nome = None
+        self.caminhao_selecionado = None
+        self.hpc = None
 
         # Variável para armazenar o caminhão selecionado
         self.configuracoes_iniciais(frente_nome=frente_nome, despacho_callback=despacho_callback)
@@ -22,18 +32,18 @@ class Despacho(tk.Toplevel):
         # Botão de despachar
         self.cria_boatao_despachar()
 
-        self.caminhao_selecionado.set(caminhao_selecionado)  # Adicione essa linha para definir o valor selecionado
+        self.caminhao_selecionado = caminhao_selecionado  # Adicione essa linha para definir o valor selecionado
 
     def configuracoes_iniciais(self, frente_nome, despacho_callback):
         self.title(f"Frente: {frente_nome}")
         self.caminhao_selecionado = tk.StringVar()
-        self.frente_nome = frente_nome  # Adicione essa linha
-        self.hpc = 0  # Adicione essa linha
-        self.vmc = 0  # Adicione essa linha
-        self.tch = 0  # Adicione essa linha
-        self.qc = 0  # Adicione essa linha
-        self.nc = 0  # Adicione essa linha
-        self.proximo_cam_str = ""  # Adicione essa linha
+        self.frente_nome = frente_nome
+        self.hpc = 0
+        self.vmc = 0
+        self.tch = 0
+        self.qc = 0
+        self.nc = 0
+        self.proximo_cam_str = ""
         self.raio = 0
         self.despacho_callback = despacho_callback
 

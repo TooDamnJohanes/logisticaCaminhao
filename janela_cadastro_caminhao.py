@@ -1,8 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox  # Importe o módulo messagebox separadamente
-
-from cadastrar_caminhão import CadastroEquipamentos
+from CadastroEquipamento import CadastroEquipamentos
 
 FROTA = "Frota:"
 TIPO = "Tipo:"
@@ -10,7 +8,6 @@ MODELO = "Modelo:"
 GRUPO = "Grupo:"
 CADASTRAR = "Cadastrar"
 JANELA_CADASTRO_EQUIPAMENTO_TITLE = "Cadastro de Equipamentos"
-
 root = tk.Tk()
 novo_equipamento = CadastroEquipamentos()
 

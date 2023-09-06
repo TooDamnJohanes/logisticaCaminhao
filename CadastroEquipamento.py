@@ -7,7 +7,6 @@ from GerenciaArquivosExcel import GerenciaArquivosExcel
 
 class CadastroEquipamentos:
     EQUIPAMENTOS = 'equipamentos'
-    TESTE = "teste"
     FROTA = "Frota"
     TIPO = "Tipo"
     MODELO = "Modelo"

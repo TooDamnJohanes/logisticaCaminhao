@@ -1,0 +1,11 @@
+MENU_PRINCIPAL = "Menu Principal"
+PYTHON = "python"
+CADASTRAR_CAMINHAO_JANELA = "janela_cadastro_caminhao.py"
+DESPACHO_JANELA = "janela_despacho.py"
+LOGISTICA_JANELA = "Logistica.py"
+JANELAS = "Janelas"
+CADASTRO_CAMINHOES = "Cadastro de Caminhões"
+DESPACHO = "Despacho"
+FRENTE_COLHEITA = "Frentes de Colheita"
+CAMINHAO_PATH_FOLDER_NAME = 'equipamentos.xlsx'
+ERRO = "Erro"
